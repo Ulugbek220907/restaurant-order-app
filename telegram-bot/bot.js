@@ -3,9 +3,21 @@
 
 const TelegramBot = require("node-telegram-bot-api");
 const fetch = require("node-fetch");
+const http = require("http");
+
+// Render's free tier only supports Web Services, which require an open port.
+// This dummy server exists purely to satisfy that check - the bot itself
+// runs on Telegram polling, not on this port.
+const PORT = process.env.PORT || 3000;
+http.createServer((req, res) => {
+  res.writeHead(200, { "Content-Type": "text/plain" });
+  res.end("Waiter bot is running.");
+}).listen(PORT, () => {
+  console.log(`Dummy port listener active on ${PORT} (for Render)`);
+});
 
 const BOT_TOKEN = process.env.BOT_TOKEN || "8882540037:AAEsT1SnoBxEBUhV_WDa6f1i8cBFZggadXw";
-const WEBSITE_URL = process.env.WEBSITE_URL || "https://restaurant-order-app-nm2u.onrender.com/order";
+const WEBSITE_URL = process.env.WEBSITE_URL || "https://restaurant-order-app-nm2u.onrender.com";
 
 const bot = new TelegramBot(BOT_TOKEN, { polling: true });
 
