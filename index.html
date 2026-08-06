@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Live Orders</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --card-bg: #1a1d24;
+    --card-border: #2a2e37;
+    --accent: #ff8a3d;
+    --accent-2: #4caf7d;
+    --text: #f2f2f2;
+    --muted: #8a8f98;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px;
+  }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  h1 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+  .status {
+    font-size: 13px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent-2);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 18px;
+    animation: slideIn 0.35s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .card.new::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--accent);
+  }
+  .card.done {
+    opacity: 0.45;
+  }
+  @keyframes slideIn {
+    from { transform: translateY(-10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+  }
+  .seat {
+    font-size: 20px;
+    font-weight: 700;
+  }
+  .time {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  ul.items {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 14px 0;
+  }
+  ul.items li {
+    padding: 6px 0;
+    border-bottom: 1px dashed var(--card-border);
+    font-size: 15px;
+  }
+  ul.items li:last-child { border-bottom: none; }
+  .waiter {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  button.done-btn {
+    background: var(--accent-2);
+    color: #0f1115;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+  }
+  button.done-btn:hover { opacity: 0.85; }
+  .empty {
+    color: var(--muted);
+    text-align: center;
+    padding: 60px 20px;
+    font-size: 15px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🍽️ Live Orders</h1>
+  <div class="status"><span class="dot"></span> Live — updates every 3s</div>
+</header>
+
+<div id="grid" class="grid">
+  <div class="empty">No orders yet. Waiting for the first one…</div>
+</div>
+
+<script>
+  const API_BASE = ""; // same origin
+
+  function timeAgo(iso) {
+    const d = new Date(iso);
+    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
+
+  async function fetchOrders() {
+    try {
+      const res = await fetch(API_BASE + "/orders");
+      const orders = await res.json();
+      render(orders);
+    } catch (e) {
+      console.error("Failed to fetch orders", e);
+    }
+  }
+
+  async function markDone(id) {
+    await fetch(API_BASE + "/order/" + id + "/done", { method: "POST" });
+    fetchOrders();
+  }
+
+  function render(orders) {
+    const grid = document.getElementById("grid");
+    if (!orders.length) {
+      grid.innerHTML = '<div class="empty">No orders yet. Waiting for the first one…</div>';
+      return;
+    }
+    grid.innerHTML = orders.map(o => `
+      <div class="card ${o.status === 'done' ? 'done' : 'new'}">
+        <div class="card-top">
+          <div class="seat">Table ${o.seat}</div>
+          <div class="time">${timeAgo(o.time)}</div>
+        </div>
+        <div class="waiter">Waiter: ${o.waiter}</div>
+        <ul class="items">
+          ${o.items.map(i => `<li>${i}</li>`).join("")}
+        </ul>
+        ${o.status !== 'done' ? `<button class="done-btn" onclick="markDone(${o.id})">Mark as Done</button>` : ''}
+      </div>
+    `).join("");
+  }
+
+  fetchOrders();
+  setInterval(fetchOrders, 3000);
+</script>
+
+</body>
+</html>
