@@ -5,7 +5,7 @@ const TelegramBot = require("node-telegram-bot-api");
 const fetch = require("node-fetch");
 
 const BOT_TOKEN = process.env.BOT_TOKEN || "8882540037:AAEsT1SnoBxEBUhV_WDa6f1i8cBFZggadXw";
-const WEBSITE_URL = process.env.WEBSITE_URL || "https://restaurant-order-app-qnd8.onrender.com/order";
+const WEBSITE_URL = process.env.WEBSITE_URL || "https://restaurant-order-app-nm2u.onrender.com/order";
 
 const bot = new TelegramBot(BOT_TOKEN, { polling: true });
 
