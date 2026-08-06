@@ -1,13 +1,13 @@
 {
-  "name": "restaurant-orders",
+  "name": "restaurant-waiter-bot",
   "version": "1.0.0",
-  "description": "Live restaurant order board - receives orders from Make and displays them in real time",
-  "main": "server.js",
+  "description": "Button-based Telegram bot for waiters to send orders",
+  "main": "bot.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node bot.js"
   },
   "dependencies": {
-    "cors": "^2.8.5",
-    "express": "^4.19.2"
+    "node-fetch": "^2.7.0",
+    "node-telegram-bot-api": "^0.66.0"
   }
 }

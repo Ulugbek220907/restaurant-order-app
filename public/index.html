@@ -152,6 +152,9 @@
     return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   }
 
+  // Track what we've already rendered so we don't replay animations
+  const rendered = new Map(); // id -> status
+
   async function fetchOrders() {
     try {
       const res = await fetch(API_BASE + "/orders");
@@ -167,25 +170,59 @@
     fetchOrders();
   }
 
+  function cardHTML(o) {
+    return `
+      <div class="card-top">
+        <div class="seat">Table ${o.seat}</div>
+        <div class="time">${timeAgo(o.time)}</div>
+      </div>
+      <div class="waiter">Waiter: ${o.waiter}</div>
+      <ul class="items">
+        ${o.items.map(i => `<li>${i}</li>`).join("")}
+      </ul>
+      ${o.status !== 'done' ? `<button class="done-btn" onclick="markDone(${o.id})">Mark as Done</button>` : ''}
+    `;
+  }
+
   function render(orders) {
     const grid = document.getElementById("grid");
+
     if (!orders.length) {
       grid.innerHTML = '<div class="empty">No orders yet. Waiting for the first one…</div>';
+      rendered.clear();
       return;
     }
-    grid.innerHTML = orders.map(o => `
-      <div class="card ${o.status === 'done' ? 'done' : 'new'}">
-        <div class="card-top">
-          <div class="seat">Table ${o.seat}</div>
-          <div class="time">${timeAgo(o.time)}</div>
-        </div>
-        <div class="waiter">Waiter: ${o.waiter}</div>
-        <ul class="items">
-          ${o.items.map(i => `<li>${i}</li>`).join("")}
-        </ul>
-        ${o.status !== 'done' ? `<button class="done-btn" onclick="markDone(${o.id})">Mark as Done</button>` : ''}
-      </div>
-    `).join("");
+
+    // Remove the "empty" placeholder if present
+    const emptyMsg = grid.querySelector(".empty");
+    if (emptyMsg) grid.innerHTML = "";
+
+    // Remove cards for orders that no longer exist (e.g. after clear)
+    const currentIds = new Set(orders.map(o => String(o.id)));
+    grid.querySelectorAll(".card").forEach(el => {
+      if (!currentIds.has(el.dataset.id)) el.remove();
+    });
+
+    orders.forEach(o => {
+      const existing = grid.querySelector(`.card[data-id="${o.id}"]`);
+      const prevStatus = rendered.get(o.id);
+
+      if (!existing) {
+        // Brand new order -> create with animation
+        const div = document.createElement("div");
+        div.className = `card new`;
+        div.dataset.id = o.id;
+        div.innerHTML = cardHTML(o);
+        grid.prepend(div);
+      } else if (prevStatus !== o.status) {
+        // Status changed (e.g. marked done) -> update without re-animating
+        existing.className = `card ${o.status === 'done' ? 'done' : ''}`;
+        existing.innerHTML = cardHTML(o);
+      }
+      // else: nothing changed, leave the DOM node untouched
+
+      rendered.set(o.id, o.status);
+    });
   }
 
   fetchOrders();
